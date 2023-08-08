@@ -1,7 +1,7 @@
 import re
 import numpy as np
 import pandas as pd
-import injectsus.utils as utils
+import epimonitor.utils as utils
 
 class ProcessBase:
     '''

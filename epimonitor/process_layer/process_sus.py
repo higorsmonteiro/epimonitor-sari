@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
-import injectsus.utils as utils
-from injectsus.process_layer import ProcessBase 
+import epimonitor.utils as utils
+from epimonitor.process_layer import ProcessBase 
 
 class ProcessSivep(ProcessBase):
     db_type = "SIVEP-GRIPE"

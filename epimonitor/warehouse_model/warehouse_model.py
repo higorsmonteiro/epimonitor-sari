@@ -21,8 +21,8 @@ from sqlalchemy import DateTime, Integer, Numeric, String, Sequence, ForeignKey,
 from sqlalchemy.exc import InternalError, IntegrityError
 
 # -- Import the data models
-from injectsus.warehouse_model.data_models import SivepGripe
-from injectsus.warehouse_model.data_models import PositivePairs
+from epimonitor.warehouse_model.data_models import SivepGripe
+from epimonitor.warehouse_model.data_models import PositivePairs
 
 # -- Utility class
 class smart_dict(dict):
@@ -137,7 +137,7 @@ class WarehouseSUS:
             
             # - Format records to be inserted
             records = [ { field : nonan_hash[val] for field, val in btc.items() } for btc in current_batch.to_dict(orient='records')]
-            if len(records)==0: 
+            if len(records)==0 and verbose: 
                 print('no records ... done.')
                 continue
         
@@ -150,6 +150,16 @@ class WarehouseSUS:
             except IntegrityError as error:
                 if verbose:
                     print(f'error: {error.args[0]} ... ', end='')
+                ## -- if there are duplicates, add one by one
+                #for cur_record in records:
+                #    new_ins = table_model.insert()
+                #    try:
+                #        with self._engine.connect() as conn:
+                #            rp = conn.execute(new_ins, cur_record)
+                #            conn.commit()
+                #    except:
+                #        continue
+                    
             
             if verbose:
                 print('done.')
@@ -246,6 +256,34 @@ class WarehouseSUS:
                 raise Exception('delete table command called, but without assurance.')
             
     # --------------- BUILT-IN QUERY METHODS ---------------
+    
+    def number_of_records(self, table_name):
+        '''
+            Return the number of records from a specific table within the warehouse.
+            
+            Args:
+            -----
+                table_name:
+                    String. Table name inside the database. Possible to extract
+                    from 'self.tables'.
+    
+            Results:
+                results:
+                    Integer. Number of records queried from the database. 
+        '''
+        # -- Load and select the data model
+        table_model = self.tables[table_name]
+        sel = select(table_model)
+
+        try:
+            with self._engine.connect() as conn:
+                rp = conn.execute(sel)
+                nrecords = 0
+                for record in rp: nrecords+=1
+                return nrecords
+        except Exception as error:
+            print(error.args[0])
+            return -1
     
     def query_all(self, table_name):
         '''
