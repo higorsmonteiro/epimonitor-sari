@@ -19,10 +19,17 @@ from epimonitor import WarehouseSUS
 # ---- 4. ...
 # ---- 5. ...
 
+delete_before = True
+
 # ---------- Database Connection ----------
 datapath = os.path.join(os.environ["HOMEPATH"], "Documents", "data")
 suspath = os.path.join(datapath, "DATASUS_WAREHOUSE", "datasus_pessoas.db") # it shouldn't be here in this script
 engine_url = f"sqlite:///{suspath}"
+
+if delete_before:
+    warehouse = WarehouseSUS(engine_url)
+    engine = warehouse.db_init()
+    warehouse.delete_table('sivep_gripe', is_sure=True, authkey="###!Y!.")
 
 warehouse = WarehouseSUS(engine_url)
 engine = warehouse.db_init()
@@ -59,6 +66,7 @@ for current_file in list_of_zipfiles:
     cur_sivep = Dbf5(dbf_file, codec='latin').to_dataframe()
     cur_sivep["DT_NASC"] = pd.to_datetime(cur_sivep["DT_NASC"], format="%d/%m/%Y", errors="coerce")
     cur_sivep["DT_NOTIFIC"] = pd.to_datetime(cur_sivep["DT_NOTIFIC"], format="%d/%m/%Y", errors="coerce")
+    cur_sivep["DT_SIN_PRI"] = pd.to_datetime(cur_sivep["DT_SIN_PRI"], format="%d/%m/%Y", errors="coerce")
 
     min_year, max_year = cur_sivep["DT_NOTIFIC"].min().year, cur_sivep["DT_NOTIFIC"].max().year
     list_of_ids = []

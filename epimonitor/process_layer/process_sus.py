@@ -10,9 +10,15 @@ class ProcessSivep(ProcessBase):
         '''
         
         '''
-        self._data["sexo"] = self._raw_data["SEXO"].apply(lambda x: x.upper().strip() if pd.notna(x) else np.nan)
-        self._data["cpf"] = self._raw_data["CPF"].apply(lambda x: f"{x:11.0f}".replace(" ", "0") if not isinstance(x, str) and pd.notna(x) else x)
-        self._data["cns"] = self._raw_data["CNS"].apply(lambda x: x if isinstance(x, str) and utils.cns_is_valid(x) and pd.notna(x) else ( f"{x:13.0f}".replace(" ", "0") if not isinstance(x, str) and pd.notna(x) else np.nan))
-        self._data["cep"] = self._raw_data["CEP"].apply(lambda x: x if isinstance(x, str) and pd.notna(x) else ( f"{x:8.0f}".replace(" ", "0") if not isinstance(x, str) and pd.notna(x) else np.nan))
-        self._data["bairro"] = self._raw_data["BAIRRO_RESIDENCIA"].apply(lambda x: utils.uniformize_name(x.upper().strip(), sep=" ") if pd.notna(x) else np.nan)
-        return self
+        sexo_arr = self._raw_data.set_index("ID_SIVEP")["SEXO"].apply(lambda x: x.upper().strip() if pd.notna(x) else np.nan)
+        cpf_arr = self._raw_data.set_index("ID_SIVEP")["CPF"].apply(lambda x: f"{x:11.0f}".replace(" ", "0") if not isinstance(x, str) and pd.notna(x) else x)
+        cns_arr = self._raw_data.set_index("ID_SIVEP")["CNS"].apply(lambda x: x if isinstance(x, str) and utils.cns_is_valid(x) and pd.notna(x) else ( f"{x:13.0f}".replace(" ", "0") if not isinstance(x, str) and pd.notna(x) else np.nan))
+        bairro_arr = self._raw_data.set_index("ID_SIVEP")["BAIRRO_RESIDENCIA"].apply(lambda x: utils.uniformize_name(x.upper().strip(), sep=" ") if pd.notna(x) else np.nan)
+        cep_arr = self._raw_data.set_index("ID_SIVEP")["CEP"].apply(lambda x: x if isinstance(x, str) and pd.notna(x) else ( f"{x:8.0f}".replace(" ", "0") if not isinstance(x, str) and pd.notna(x) else np.nan))
+        
+        newcol, colnames = [sexo_arr, cpf_arr, cns_arr, bairro_arr, cep_arr], ["sexo", "cpf", "cns", "bairro", "cep"]
+        for index, colname in enumerate(colnames):
+            self._data = self._data.merge(newcol[index], left_on=self.field_id, right_index=True, how='left')
+            
+        self._data = self._data.rename({"SEXO": "sexo", "CPF": "cpf", "CNS": "cns", "BAIRRO_RESIDENCIA": "bairro", "CEP": "cep"}, axis=1) 
+        

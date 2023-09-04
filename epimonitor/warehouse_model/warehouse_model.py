@@ -112,7 +112,7 @@ class WarehouseSUS:
                     pandas.DataFrame. Records to be inserted. Schema should match the 
                     official data sources. For instance, if the data source is SIVEP-Gripe,
                     then the columns must match the original ones. 
-                chunksize:
+                batchsize:
                     Integer. Size of the batches of records to insert in the table.
         '''
         # - Load the data model and the schema mapping from 'table_name' and rename the columns of 'data_df'
@@ -132,6 +132,7 @@ class WarehouseSUS:
         data_df = data_df[ table_mapping.values() ]
         splitted_data = np.split(data_df, np.arange(batchsize, data_df.shape[0]+1, batchsize))
         for nindex, current_batch in enumerate(splitted_data):
+            has_duplicate = False
             if verbose:
                 print(f'Insertion of batch {nindex+1} of {len(splitted_data)} ... ', end='')
             
@@ -150,17 +151,21 @@ class WarehouseSUS:
             except IntegrityError as error:
                 if verbose:
                     print(f'error: {error.args[0]} ... ', end='')
+                
                 ## -- if there are duplicates, add one by one
-                #for cur_record in records:
-                #    new_ins = table_model.insert()
-                #    try:
-                #        with self._engine.connect() as conn:
-                #            rp = conn.execute(new_ins, cur_record)
-                #            conn.commit()
-                #    except:
-                #        continue
+                if 'UNIQUE constraint failed:' in error.args[0]:
+                    if verbose:
+                        print(f'adding one by one ... ', end='')
+                
+                    for cur_record in records:
+                        new_ins = table_model.insert()
+                        try:
+                            with self._engine.connect() as conn:
+                                rp = conn.execute(new_ins, cur_record)
+                                conn.commit()
+                        except:
+                            continue
                     
-            
             if verbose:
                 print('done.')
         
@@ -349,7 +354,6 @@ class WarehouseSUS:
             print(error.args[0])
             return []
     
-    
     def query_period(self, table_name, date_col=None, period=None):
         '''
             Select records from a specific table within the warehouse.
@@ -384,6 +388,45 @@ class WarehouseSUS:
             if period[1] is None:
                 period[1] = dt.datetime.today()
             sel = sel.where(table_model.c[date_col].between(period[0], period[1]))
+                
+        # -- try to perform query
+        try:
+            with self._engine.connect() as conn:
+                rp = conn.execute(sel)
+                results = [ record for record in rp ]
+                return results
+        except Exception as error:
+            print(error.args[0])
+            return []
+        
+    def query_id(self, table_name, year, date_col='DATA_NOTIFICACAO'):
+        '''
+            Select the records' IDs from a specific period within the warehouse.
+            
+            Args:
+            -----
+                table_name:
+                    String. Table name inside the database. Possible to extract from
+                    'self.tables'.
+                year:
+                    Integer. 
+                date_col:
+                    String. Column date of the table used for ordering and filtering
+                    by period (if 'period' is provided).
+                    
+            Return:
+            -------
+                results:
+                    List. List of sql table rows queried from the database. 
+        '''
+        # -- load and select the data model
+        try:
+            table_model = self.tables[table_name]
+        except:
+            raise Exception(f"Table '{table_name}' not found.")
+        
+        primary_key_name = [ p.name for p in inspect(table_model).primary_key ][0]
+        sel = select(table_model.c[primary_key_name], table_model.c[date_col]).where(table_model.c[date_col].between(dt.datetime(year, 1, 1), dt.datetime(year, 12, 31)))
                 
         # -- try to perform query
         try:

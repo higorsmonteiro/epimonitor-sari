@@ -45,6 +45,10 @@ class SivepGripe:
             Column("CNS", String, nullable=True),
             Column("CPF", String, nullable=True),
             Column("CNES", String, nullable=False),
+            Column("DATA_SINTOMAS", DateTime, nullable=True),
+            Column("CLASSIFICACAO_FINAL", String, nullable=True),
+            Column("CRITERIO", String, nullable=True),
+            Column("EVOLUCAO", String, nullable=True),
             Column("CRIADO_EM", DateTime, default=dt.datetime.now),
             Column("ATUALIZADO_EM", DateTime, default=dt.datetime.now, onupdate=dt.datetime.now),
         )
@@ -57,7 +61,9 @@ class SivepGripe:
             "NM_BAIRRO": "BAIRRO_RESIDENCIA", "NM_LOGRADO": "LOGRADOURO",
             "NU_NUMERO": "LOGRADOURO_NUMERO", "NU_CEP": "CEP", 
             "NU_CNS": "CNS", "NU_CPF": "CPF", "CS_SEXO": "SEXO",
-            "CO_UNI_NOT": "CNES",
+            "CO_UNI_NOT": "CNES", "DT_SIN_PRI": "DATA_SINTOMAS",
+            "CLASSI_FIN": "CLASSIFICACAO_FINAL", "CRITERIO": "CRITERIO", 
+            "EVOLUCAO": "EVOLUCAO",
         }
 
     def define(self):

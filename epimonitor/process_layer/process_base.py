@@ -65,6 +65,31 @@ class ProcessBase:
         
         # -- general blocking variable
         self._data["FONETICA_N"] = self._data["NOME_PACIENTE"].apply(lambda x: f"{x.split(' ')[0]}{x.split(' ')[-1]}" if pd.notna(x) else np.nan)
+
+        # -- frequency of first names
+        fst_name_freq = self._data["primeiro_nome"].value_counts().reset_index().rename({"index": "primeiro_nome", "count": "count_primeiro_nome"}, axis=1)
+        mother_fst_name_freq = self._data["primeiro_nome_mae"].value_counts().reset_index().rename({"index": "primeiro_nome_mae", "count": "count_primeiro_nome_mae"}, axis=1)
+
+        self.freq_names = pd.concat([fst_name_freq, mother_fst_name_freq], axis=1)
+        self.freq_names['norm_primeiro_nome'] = self.freq_names['count_primeiro_nome']/self._data.shape[0]
+        self.freq_names['norm_primeiro_nome_mae'] = self.freq_names['count_primeiro_nome_mae']/self._data.shape[0]
+        
+        # ---- log transform the power law 
+        nbins = 8
+        log_xscale, lin_xscale = np.concatenate((np.array([0]), np.logspace(-6, 0, nbins))), np.arange(0, nbins, 1)
+        self.freq_names["rank_primeiro_nome"] = pd.cut(self.freq_names["norm_primeiro_nome"], log_xscale, labels=lin_xscale).fillna(0)
+        self.freq_names["rank_primeiro_nome_mae"] = pd.cut(self.freq_names["norm_primeiro_nome_mae"], log_xscale, labels=lin_xscale).fillna(0)
+
+        self.freq_names = self.freq_names.drop(["count_primeiro_nome", "count_primeiro_nome_mae"], axis=1)
+        self.freq_names = self.freq_names[["primeiro_nome", "norm_primeiro_nome", "rank_primeiro_nome", "primeiro_nome_mae", "norm_primeiro_nome_mae", "rank_primeiro_nome_mae"]].copy()
+
+        merged_primeiro_nome = self._data[pd.notna(self._data["primeiro_nome"])][[self.field_id, "primeiro_nome"]].merge(self.freq_names[["primeiro_nome", "norm_primeiro_nome", "rank_primeiro_nome"]], on="primeiro_nome", how="left")
+        merged_primeiro_nome_mae = self._data[pd.notna(self._data["primeiro_nome_mae"])][[self.field_id, "primeiro_nome_mae"]].merge(self.freq_names[["primeiro_nome_mae", "norm_primeiro_nome_mae", "rank_primeiro_nome_mae"]], on="primeiro_nome_mae", how="left")
+
+        if 'norm_primeiro_nome' not in self._data.columns and 'norm_primeiro_nome_mae' not in self._data.columns:
+            self._data = self._data.merge(merged_primeiro_nome[[self.field_id, "norm_primeiro_nome", "rank_primeiro_nome"]], on=self.field_id, how="left")
+            self._data = self._data.merge(merged_primeiro_nome_mae[[self.field_id, "norm_primeiro_nome_mae", "rank_primeiro_nome_mae"]], on=self.field_id, how="left")
+
         return self # chaining
 
     def specific_standardize(self):
