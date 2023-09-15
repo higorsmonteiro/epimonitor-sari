@@ -17,7 +17,7 @@ from sqlalchemy import create_engine
 from sqlalchemy import Column, Table, MetaData
 from sqlalchemy import select, insert, update, delete
 from sqlalchemy import inspect, text
-from sqlalchemy import DateTime, Integer, Numeric, String, Sequence, ForeignKey, CheckConstraint
+from sqlalchemy import DateTime, Integer, Numeric, String, Float, Sequence, ForeignKey, CheckConstraint
 from sqlalchemy.exc import InternalError, IntegrityError
 
 
@@ -53,7 +53,7 @@ class SivepGripe:
             Column("ATUALIZADO_EM", DateTime, default=dt.datetime.now, onupdate=dt.datetime.now),
         )
 
-        # -- Define data mapping (could be import if too big)
+        # -- define data mapping (could be import if too big)
         self.mapping = {
             "NU_NOTIFIC" : "ID_SIVEP",  "DT_NOTIFIC": "DATA_NOTIFICACAO",
             "NM_PACIENT": "NOME_PACIENTE", "DT_NASC": "DATA_NASCIMENTO",
@@ -78,18 +78,42 @@ class SivepGripe:
 
 # ---------- MATCHING DATA MODELS ----------
 
-class PositivePairs:
+class SimilaritySivepGripe:
     def __init__(self, metadata):
         self.metadata = metadata
-        self.table_name = 'positive_pairs'
+        self.table_name = 'label_sivep_gripe'
 
-        # --> Define schema for table.
+        # --> define schema for table.
         self.model = Table(
             self.table_name, self.metadata,
-            Column("ID_1", String, nullable=False),
-            Column("ID_2", String, nullable=False),
-            Column("TABLE_1", String, nullable=False),
-            Column("TABLE_2", String, nullable=False)
+            Column("ID1-ID2", String, primary_key=True),
+            Column("ID1", String, nullable=False),
+            Column("ID2", String, nullable=False),
+            Column("PROBA_NEGATIVO_MODELO_1", Float(6), nullable=True),
+            Column("PROBA_NEGATIVO_MODELO_2", Float(6), nullable=True),
+            Column("PROBA_NEGATIVO_MODELO_3", Float(6), nullable=True),
+            Column("CRIADO_EM", DateTime, default=dt.datetime.now),
         )
 
-        self.mapping = None
+        # -- define data mapping (could be imported if too big) - include all columns!
+        self.mapping = {
+            "ID_SIVEP_1" : "ID1",  "ID_SIVEP_2" : "ID2", "FMT_PKEY": "ID1-ID2",
+            "PROBA_NEGATIVO_MODELO_1" : "PROBA_NEGATIVO_MODELO_1",
+            "PROBA_NEGATIVO_MODELO_2": "PROBA_NEGATIVO_MODELO_2",
+            "PROBA_NEGATIVO_MODELO_3": "PROBA_NEGATIVO_MODELO_3", 
+            #"cns" : "CNS",  "cep" : "CEP", "cpf" : "CPF", "sexo": "SEXO",
+            #"nascimento_dia" : "NASCIMENTO_DIA", "nascimento_mes" : "NASCIMENTO_MES", 
+            #"nascimento_ano" : "NASCIMENTO_ANO", "primeiro_nome" : "PRIMEIRO_NOME",
+            #"primeiro_nome_mae" : "PRIMEIRO_NOME_MAE", "complemento_nome": "COMPLEMENTO_NOME",
+            #"complemento_nome_mae": "COMPLEMENTO_NOME_MAE", "bairro": "BAIRRO",
+            #"rank_primeiro_nome": "RANK_PRIMEIRO_NOME", "rank_primeiro_nome_mae": "RANK_PRIMEIRO_NOME_MAE", 
+        }
+
+    def define(self):
+        '''
+            Return dictionary elements containing the data model and 
+            the data mapping, respectively.
+        '''
+        table_elem = { self.table_name : self.model }
+        mapping_elem = { self.table_name : self.mapping }
+        return table_elem, mapping_elem

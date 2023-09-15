@@ -9,6 +9,27 @@ from epimonitor.data_matching import MatchingBase
 
 class Deduple(MatchingBase):
 
+    def define_pairs(self, blocking_var, window=1):
+        '''
+            After setting the properties of the linkage, blocking is defined to generate the pairs 
+            for comparison.
+
+            Args:
+            -----
+                blocking_var:
+                    String. Name of the field regarding the blocking variable for the linkage.
+                window:
+                    Odd Integer. Window parameter for the sorted neighborhood blocking algorithm. 
+                    window equal one means exact blocking.
+        '''
+        indexer = recordlinkage.Index()
+        indexer.add(SortedNeighbourhood(blocking_var, blocking_var, window=window))
+        self.candidate_pairs = indexer.index(self.left_df)
+        # -- sort the order of each pair with respect to the ID.
+        self.candidate_pairs = pd.MultiIndex.from_tuples( list({*map(tuple, map(sorted, list(self.candidate_pairs)))}), names=["ID_SIVEP_1", "ID_SIVEP_2"] )
+        print(f"Number of pairs: {len(self.candidate_pairs)}")
+        return self
+    
     # TO DO: DEDUPLE OVER CHUNKSIZES (FOR VERY LARGE DATASETS) -> Could be done from outside
     def perform_linkage(self, blocking_var, window=1, output_fname="feature_pairs", threshold=None):
         '''
@@ -27,12 +48,13 @@ class Deduple(MatchingBase):
         '''
 
         # --> set blocking rule and create pairs for comparison
-        indexer = recordlinkage.Index()
-        indexer.add(SortedNeighbourhood(blocking_var, blocking_var, window=window))
-        candidate_links = indexer.index(self.left_df)
-        print(f"Number of pairs: {len(candidate_links)}")
-        if len(candidate_links):
-            self._comparison_matrix = self.compare_cl.compute(candidate_links, self.left_df)
+        if self.candidate_pairs is None:
+            indexer = recordlinkage.Index()
+            indexer.add(SortedNeighbourhood(blocking_var, blocking_var, window=window))
+            self.candidate_pairs = indexer.index(self.left_df)
+            print(f"Number of pairs: {len(self.candidate_pairs)}")
+        if len(self.candidate_pairs):
+            self._comparison_matrix = self.compare_cl.compute(self.candidate_pairs, self.left_df)
         else:
             return self
 
@@ -46,6 +68,9 @@ class Deduple(MatchingBase):
 
 class PLinkage(MatchingBase):
 
+    def define_pairs(self, blocking_var, window=1):
+        pass
+    
     # TO DO: LINKAGE OVER CHUNKSIZES (FOR VERY LARGE DATASETS)
     def perform_linkage(self, blocking_var, window=1, output_fname="feature_pairs", threshold=None):
         '''

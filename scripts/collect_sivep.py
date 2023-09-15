@@ -67,7 +67,7 @@ requisition_list += [collector.requisition_number]
 
 collector.request_dbf('2023', '1', '25', requisition_export=requisition_logfile).query_file().download_file(sleep_time=7, verbose=True, max_loop=100)
 requisition_list += [collector.requisition_number]
-collector.request_dbf('2023', '26', '32', requisition_export=requisition_logfile).query_file().download_file(sleep_time=7, verbose=True, max_loop=100)
+collector.request_dbf('2023', '26', '36', requisition_export=requisition_logfile).query_file().download_file(sleep_time=7, verbose=True, max_loop=100)
 requisition_list += [collector.requisition_number]
 
 # -- verify whether all data was downloaded

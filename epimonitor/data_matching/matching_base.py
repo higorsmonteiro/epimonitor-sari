@@ -31,6 +31,7 @@ class MatchingBase:
     def __init__(self, left_df, right_df=None, left_id=None, right_id=None, env_folder=None) -> None:
         self._comparison_matrix = None
         self.linkage_vars = None
+        self.candidate_pairs = None
         self.compare_cl, self._comparison_matrix = None, None
 
         # --> solve for the left dataframe
@@ -96,6 +97,9 @@ class MatchingBase:
                 self.compare_cl.string(key, key, label=key, threshold=values[1], method=string_method)
             else:
                 pass
+        return self
+    
+    def define_pairs(self):
         return self
 
     def perform_linkage(self):

@@ -21,8 +21,7 @@ from sqlalchemy import DateTime, Integer, Numeric, String, Sequence, ForeignKey,
 from sqlalchemy.exc import InternalError, IntegrityError
 
 # -- Import the data models
-from epimonitor.warehouse_model.data_models import SivepGripe
-from epimonitor.warehouse_model.data_models import PositivePairs
+from epimonitor.warehouse_model.data_models import SivepGripe, SimilaritySivepGripe
 
 # -- Utility class
 class smart_dict(dict):
@@ -63,13 +62,14 @@ class WarehouseSUS:
 
         # -- set the data models
         sivep_table_elem, sivep_mapping_elem = SivepGripe(self._metadata).define()
+        sivepsim_table_elem, sivepsim_mapping_elem = SimilaritySivepGripe(self._metadata).define()
         #sim_table_elem, sim_mapping_elem = Sim(self._metadata).define()
         #sinasc_table_elem, sinasc_mapping_elem = Sinasc(self. _metadata).define()
         #sinan_table_elem, sinan_mapping_elem = Sinan(self._metadata).define()
 
         
-        _temp_table = [ sivep_table_elem ]
-        _temp_mapping = [ sivep_mapping_elem ]
+        _temp_table = [ sivep_table_elem, sivepsim_table_elem ]
+        _temp_mapping = [ sivep_mapping_elem, sivepsim_mapping_elem ]
         for nindex in range(len(_temp_table)):
             self.tables.update( _temp_table[nindex] )
             self.mappings.update( _temp_mapping[nindex] )
@@ -182,7 +182,7 @@ class WarehouseSUS:
                 updated_record:
                     Dictionary.
         '''
-        # - Load the data model and define update filtering
+        # -- load the data model and define update filtering
         table_model = self.tables[table_name]
         primary_key_name = [ p.name for p in inspect(table_model).primary_key ][0]
         updt = update(table_model).where(table_model.c[primary_key_name] == primary_key_value)
@@ -317,7 +317,7 @@ class WarehouseSUS:
             print(error.args[0])
             return []
     
-    def query_where(self, table_name, value=None, colname=None):
+    def query_where(self, table_name, value=None, colname=None, condition='equal'):
         '''
             Select records matching a specific value of a field in the table.
             
@@ -341,7 +341,14 @@ class WarehouseSUS:
         
         # -- select the data model and build the query
         table_model = self.tables[table_name]
-        sel = select(table_model).where(table_model.c[colname] == value)
+        sel = select(table_model)
+        if condition=='equal':
+            sel = sel.where(table_model.c[colname] == value)
+        if condition=='larger':
+            sel = sel.where(table_model.c[colname] >= value)
+        elif condition=='smaller':
+            sel = sel.where(table_model.c[colname] < value)
+        
         sel = sel.order_by(table_model.c[colname])
                 
         # -- try to perform query
