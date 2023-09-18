@@ -26,7 +26,7 @@ class Deduple(MatchingBase):
         indexer.add(SortedNeighbourhood(blocking_var, blocking_var, window=window))
         self.candidate_pairs = indexer.index(self.left_df)
         # -- sort the order of each pair with respect to the ID.
-        self.candidate_pairs = pd.MultiIndex.from_tuples( list({*map(tuple, map(sorted, list(self.candidate_pairs)))}), names=["ID_SIVEP_1", "ID_SIVEP_2"] )
+        self.candidate_pairs = pd.MultiIndex.from_tuples( list({*map(tuple, map(sorted, list(self.candidate_pairs)))}), names=[f"{self.left_id}_1", f"{self.left_id}_2"] )
         print(f"Number of pairs: {len(self.candidate_pairs)}")
         return self
     
