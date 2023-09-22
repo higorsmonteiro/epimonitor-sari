@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*- 
 
-
 import os
 import ujson as json
 import numpy as np
@@ -11,8 +10,8 @@ import epimonitor.data_matching.utils as matching_utils
 
 class MatchingBase:
     '''
-        Base class to define general definitions for deduplication and probabilistic linkage over
-        specific databases.
+        Base class to set general definitions for the tasks of deduplication and probabilistic linkage 
+        over databases.
 
         Args:
         -----
@@ -21,11 +20,16 @@ class MatchingBase:
             right_df:
                 pandas.DataFrame.
             left_id:
-                String.
+                String. Unique ID for the left-hand dataframe.
             right_id:
-                String.
+                String. Unique ID for the right-hand dataframe.
             env_folder:
-                String.
+                String. Optional path to the folder pairs' storage.
+
+        Attributes:
+        -----------
+            comparison_matrix:
+                pandas.DataFrame.
     '''
 
     def __init__(self, left_df, right_df=None, left_id=None, right_id=None, env_folder=None) -> None:
@@ -34,13 +38,13 @@ class MatchingBase:
         self.candidate_pairs = None
         self.compare_cl, self._comparison_matrix = None, None
 
-        # --> solve for the left dataframe
+        # -- solve for the left dataframe
         self.left_df, self.left_id = left_df.copy(), left_id
         if self.left_id is None:
             raise Exception("Must provide an existing field as a unique identifier.")
         self.left_df = self.left_df.set_index(self.left_id)
         
-        # --> solve for the right dataframe, if the case
+        # -- solve for the right dataframe, if the case
         self.right_df = None
         if right_df is not None:
             self.right_df, self.right_id = right_df.copy(), right_id
@@ -48,11 +52,14 @@ class MatchingBase:
                 raise Exception("Must provide an existing field as a unique identifier.")
             self.right_df = self.right_df.set_index(self.right_id)
             
-        # --> select working folder
+        # -- select working folder
         self.env_folder = env_folder
         if self.env_folder is not None and not os.path.isdir(self.env_folder):
             os.mkdir(self.env_folder)
 
+    # ------------------------------------------
+    # --------------- Attributes ---------------
+    
     @property
     def comparison_matrix(self):
         if self._comparison_matrix is not None:
@@ -63,11 +70,47 @@ class MatchingBase:
         raise Exception("Not possible to change this attribute from outside.")
     
     '''
-        -------------------------------------------
-        ------------ MATCHING SETTINGS ------------
-        -------------------------------------------
+        -------------------------------------------------------------------
+        ------------------------ MATCHING SETTINGS ------------------------
+        -------------------------------------------------------------------
     '''
-    def set_linkage(self, compare_rules, string_method="damerau_levenshtein"):
+    def set_linkage(self, linkage_vars, string_method="damerau_levenshtein"):
+        '''
+            
+            Args:
+            -----
+                linkage_vars:
+                    List of tuples. Each element of the list must be at least a tuple of size 3.
+                    The first and second position of the tuple are the names of one field of the
+                    left-hand dataframe and one field of the the right-hand dataframe, respectively. 
+                    This determines which fields must be compared. For deduplication, only the first
+                    position is considered. 
+                    
+                    The third position defines how those fields will be compared ('exact', 'string', 
+                    'numerical', ...).
+
+                    Fourth position is the label of the comparison.   
+
+                **kwargs:
+                    Aside from the 'threshold' argument, arguments are the same as the comparison
+                    methods from recordlinkage.Compare class. 
+            Return:
+                None.
+        '''
+        self.linkage_vars = linkage_vars
+        self.compare_cl = recordlinkage.Compare()
+        for elem in self.linkage_vars:
+            left_field, right_field, cmethod, label = elem[0], elem[1], elem[2], elem[3]
+            if cmethod=='exact':
+                self.compare_cl.exact(left_field, right_field, label=label)
+            elif cmethod=='string':
+                self.compare_cl.string(left_field, right_field, label=label, method=string_method, threshold=None)
+            else:
+                pass
+        return self
+    
+    
+    def set_linkage_old(self, compare_rules, string_method="damerau_levenshtein"):
         '''
             Description.
 
@@ -110,6 +153,9 @@ class MatchingBase:
         ------------ INPUT AND OUTPUT ------------
         ------------------------------------------
     '''
+    def export_comparison_matrix(self, env_folder, fname):
+        self._comparison_matrix.to_parquet(os.path.join(env_folder, f"{fname}.parquet"))
+
     def save_files(self, pairs, aggr_df, output_folder=None, left_cols=None, right_cols=None, overwrite=False, batchsize=100):
         '''
             Description.

@@ -29,7 +29,8 @@ engine_url = f"sqlite:///{suspath}"
 if delete_before:
     warehouse = WarehouseSUS(engine_url)
     engine = warehouse.db_init()
-    warehouse.delete_table('sivep_gripe', is_sure=True, authkey="###!Y!.")
+    warehouse.delete_table('sivep_gripe_pessoa', is_sure=True, authkey="###!Y!.")
+    warehouse.delete_table('sivep_gripe_info', is_sure=True, authkey="###!Y!.")
 
 warehouse = WarehouseSUS(engine_url)
 engine = warehouse.db_init()
@@ -71,7 +72,7 @@ for current_file in list_of_zipfiles:
     min_year, max_year = cur_sivep["DT_NOTIFIC"].min().year, cur_sivep["DT_NOTIFIC"].max().year
     list_of_ids = []
     for current_year in np.arange(min_year, max_year+1, 1):
-        list_of_ids += [ pd.DataFrame(warehouse.query_id('sivep_gripe', current_year)) ]
+        list_of_ids += [ pd.DataFrame(warehouse.query_id('sivep_gripe_pessoa', current_year)) ]
     list_of_ids = pd.concat(list_of_ids)
     if list_of_ids.shape[0]>0:
         list_of_ids = list_of_ids["ID_SIVEP"]
@@ -81,7 +82,8 @@ for current_file in list_of_zipfiles:
     print(f"{cur_sivep_new.shape[0]} new records to be added to the database ... ", end='')
 
     # -- insert records
-    warehouse.insert('sivep_gripe', cur_sivep_new, batchsize=200, verbose=False)
+    warehouse.insert('sivep_gripe_pessoa', cur_sivep_new, batchsize=200, verbose=False)
+    warehouse.insert('sivep_gripe_info', cur_sivep_new, batchsize=200, verbose=False)
     
     # -- delete extracted file
     print("done.")

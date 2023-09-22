@@ -13,6 +13,14 @@ from collections import defaultdict
     ------------------------------------------------- 
 '''
 
+def split_list(lst, nparts):
+    '''
+        Stack Overflow link:
+        https://stackoverflow.com/questions/2130016/splitting-a-list-into-n-parts-of-approximately-equal-length/37414115#37414115
+    '''
+    n = len(lst)
+    return [lst[i * (n // nparts) + min(i, n % nparts):(i+1) * (n // nparts) + min(i+1, n % nparts)] for i in range(nparts)]
+
 def score_summary(score_arr, bins, range_certain, range_potential, scale="linear"):
     '''
         Plot a distribution of the scores resulted from the data matching process.
