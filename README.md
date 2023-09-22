@@ -1,2 +1,3 @@
-# epimonitor-sari
-Complete workflow for close to real-time monitoring of SARI epidemiology in Fortaleza. 
+# SARI monitor
+
+Complete workflow for daily monitoring of SARI epidemiology in Fortaleza. 
