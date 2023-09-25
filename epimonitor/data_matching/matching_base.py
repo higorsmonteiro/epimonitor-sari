@@ -31,16 +31,15 @@ class MatchingBase:
             comparison_matrix:
                 pandas.DataFrame.
     '''
-
     def __init__(self, left_df, right_df=None, left_id=None, right_id=None, env_folder=None) -> None:
-        self._comparison_matrix = None
         self.linkage_vars = None
         self.candidate_pairs = None
+        self.name_ranks = None
         self.compare_cl, self._comparison_matrix = None, None
 
         # -- solve for the left dataframe
         self.left_df, self.left_id = left_df.copy(), left_id
-        if self.left_id is None:
+        if self.left_id is None or self.left_id not in self.left_df.columns:
             raise Exception("Must provide an existing field as a unique identifier.")
         self.left_df = self.left_df.set_index(self.left_id)
         
@@ -48,7 +47,7 @@ class MatchingBase:
         self.right_df = None
         if right_df is not None:
             self.right_df, self.right_id = right_df.copy(), right_id
-            if self.right_id is None:
+            if self.right_id is None or self.right_id not in self.right_df.columns:
                 raise Exception("Must provide an existing field as a unique identifier.")
             self.right_df = self.right_df.set_index(self.right_id)
             
@@ -69,13 +68,12 @@ class MatchingBase:
     def comparison_matrix(self):
         raise Exception("Not possible to change this attribute from outside.")
     
-    '''
-        -------------------------------------------------------------------
-        ------------------------ MATCHING SETTINGS ------------------------
-        -------------------------------------------------------------------
-    '''
-    def set_linkage(self, linkage_vars, string_method="damerau_levenshtein"):
+    # ---------------------------------------------------------
+    # --------------- Matching general settings ---------------
+    
+    def set_linkage_variables(self, linkage_vars, string_method="damerau_levenshtein"):
         '''
+            Define the variables to be compared and the method of comparison.
             
             Args:
             -----
@@ -90,12 +88,6 @@ class MatchingBase:
                     'numerical', ...).
 
                     Fourth position is the label of the comparison.   
-
-                **kwargs:
-                    Aside from the 'threshold' argument, arguments are the same as the comparison
-                    methods from recordlinkage.Compare class. 
-            Return:
-                None.
         '''
         self.linkage_vars = linkage_vars
         self.compare_cl = recordlinkage.Compare()
@@ -105,9 +97,22 @@ class MatchingBase:
                 self.compare_cl.exact(left_field, right_field, label=label)
             elif cmethod=='string':
                 self.compare_cl.string(left_field, right_field, label=label, method=string_method, threshold=None)
+            elif cmethod=='numerical':
+                pass
+            elif cmethod=='date':
+                pass
             else:
                 pass
         return self
+    
+    def get_rank_names(self, rank_colnames=['rank_primeiro_nome', 'rank_primeiro_nome_mae']):
+        '''
+            Get the data with the ranking of first names. 
+
+            The data is expected from the data parsed to the class. The names of the columns
+            is provided externally.
+        '''
+        self.name_ranks = self.left_df[rank_colnames]
     
     
     def set_linkage_old(self, compare_rules, string_method="damerau_levenshtein"):
@@ -148,13 +153,12 @@ class MatchingBase:
     def perform_linkage(self):
         return self
 
-    '''
-        ------------------------------------------
-        ------------ INPUT AND OUTPUT ------------
-        ------------------------------------------
-    '''
+    # ----------------------------------------------------------
+    # ---------------------- INPUT/OUTPUT ----------------------
+    
     def export_comparison_matrix(self, env_folder, fname):
-        self._comparison_matrix.to_parquet(os.path.join(env_folder, f"{fname}.parquet"))
+        if self._comparison_matrix is not None:
+            self._comparison_matrix.to_parquet(os.path.join(env_folder, f"{fname}.parquet"))
 
     def save_files(self, pairs, aggr_df, output_folder=None, left_cols=None, right_cols=None, overwrite=False, batchsize=100):
         '''

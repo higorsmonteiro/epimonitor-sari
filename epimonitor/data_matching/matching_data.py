@@ -31,23 +31,26 @@ class Deduple(MatchingBase):
         print(f"Number of pairs: {len(self.candidate_pairs)}")
         return self
     
-    # TO DO: DEDUPLE OVER CHUNKSIZES (FOR VERY LARGE DATASETS) -> Could be done from outside
-    def perform_linkage(self, threshold=None, split_n=1, verbose=True):
+    def perform_linkage(self, threshold=None, number_of_blocks=1, verbose=True):
         '''
             Perform the comparison calculations.
 
             Args:
             -----
-                chunksize: NOT IMPLEMENTED.
-                    Integer. Size of each partition of the right (BOTH!) database for partitioned linkage 
-                    (used for large databases).
+                threshold:
+                    Float.
+                number_of_blocks:
+                    Integer. Number of partitions on the list of pairs to be compared. To be used
+                    for larger datasets.
         '''
         
-        
-        if len(self.candidate_pairs) and split_n==1:
+        if len(self.candidate_pairs) and number_of_blocks==1:
+            # -- one round of calculation for the complete list of pairs.
             self._comparison_matrix = self.compare_cl.compute(self.candidate_pairs, self.left_df)
-        elif len(self.candidate_pairs) and split_n>1:
-            splitted_list = utils.split_list(list(self.candidate_pairs), split_n)
+        elif len(self.candidate_pairs) and number_of_blocks>1:
+            # -- calculation by dividing the list of pairs into 'n' batches.
+            splitted_list = utils.split_list(list(self.candidate_pairs), number_of_blocks)
+            
             self._comparison_matrix = []
             for index, subset_candidate_pairs in enumerate(splitted_list):
                 subset_candidate_pairs = pd.MultiIndex.from_tuples( list({*map(tuple, map(sorted, list(subset_candidate_pairs)))}), names=[f"{self.left_id}_1", f"{self.left_id}_2"] )
@@ -63,6 +66,9 @@ class Deduple(MatchingBase):
         # -- all scores less than 'threshold' are reduced to zero.
         if threshold is not None and threshold<=1.0:
             self._comparison_matrix[self._comparison_matrix<threshold] = 0.0
+
+        self.get_rank_names()
+        self._comparison_matrix = self.comparison_matrix.merge(self.name_ranks, left_on=[f"{self.left_id}_1"], right_index=True, how="left").fillna(7)
 
         return self
 
