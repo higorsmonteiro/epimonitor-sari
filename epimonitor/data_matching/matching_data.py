@@ -131,3 +131,6 @@ class PLinkage(MatchingBase):
         # --> All field scores less than 'threshold' are reduced to zero.
         if threshold is not None and threshold<=1.0:
             self._comparison_matrix[self._comparison_matrix<threshold] = 0.0
+
+        #self.get_rank_names()
+        #self._comparison_matrix = self.comparison_matrix.merge(self.name_ranks, left_on=[f"{self.left_id}_1"], right_index=True, how="left").fillna(7)
