@@ -10,8 +10,8 @@ import epimonitor.data_matching.utils as matching_utils
 
 class MatchingBase:
     '''
-        Base class to set general definitions for the tasks of deduplication and probabilistic linkage 
-        over databases.
+        Base class with general settings and definitions for the tasks of deduplication and probabilistic 
+        linkage over databases.
 
         Args:
         -----
@@ -37,13 +37,13 @@ class MatchingBase:
         self.name_ranks = None
         self.compare_cl, self._comparison_matrix = None, None
 
-        # -- solve for the left dataframe
+        # -- solve init for the left dataframe
         self.left_df, self.left_id = left_df.copy(), left_id
         if self.left_id is None or self.left_id not in self.left_df.columns:
             raise Exception("Must provide an existing field as a unique identifier.")
         self.left_df = self.left_df.set_index(self.left_id)
         
-        # -- solve for the right dataframe, if the case
+        # -- solve init for the right dataframe, if the case
         self.right_df = None
         if right_df is not None:
             self.right_df, self.right_id = right_df.copy(), right_id
@@ -79,15 +79,15 @@ class MatchingBase:
             -----
                 linkage_vars:
                     List of tuples. Each element of the list must be at least a tuple of size 3.
-                    The first and second position of the tuple are the names of one field of the
+                    The 1st and 2nd position of the tuple are the names of one field of the
                     left-hand dataframe and one field of the the right-hand dataframe, respectively. 
                     This determines which fields must be compared. For deduplication, only the first
                     position is considered. 
                     
-                    The third position defines how those fields will be compared ('exact', 'string', 
+                    The 3rd position defines how those fields will be compared ('exact', 'string', 
                     'numerical', ...).
 
-                    Fourth position is the label of the comparison.   
+                    4th position is the label of the comparison.   
         '''
         self.linkage_vars = linkage_vars
         self.compare_cl = recordlinkage.Compare()
@@ -113,7 +113,6 @@ class MatchingBase:
             is provided externally.
         '''
         self.name_ranks = self.left_df[rank_colnames]
-    
     
     def set_linkage_old(self, compare_rules, string_method="damerau_levenshtein"):
         '''
