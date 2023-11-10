@@ -20,6 +20,14 @@ class ProcessSivep(ProcessBase):
             
         self._data = self._data.rename({"SEXO": "sexo", "CPF": "cpf", "CNS": "cns", "BAIRRO_RESIDENCIA": "bairro", "CEP": "cep"}, axis=1) 
 
+
+class ProcessSIM(ProcessBase):
+    db_type = "SIM"
+
+    def specific_standardize(self, field_id="ID_SIM"):
+        pass
+        
+
 class ProcessDB(ProcessBase):
     db_type = "ANY"
 
