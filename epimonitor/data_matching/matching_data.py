@@ -92,13 +92,13 @@ class PLinkage(MatchingBase):
         indexer = recordlinkage.Index()
         indexer.add(SortedNeighbourhood(left_blocking_var, right_blocking_var, window=window))
         self.candidate_pairs = indexer.index(self.left_df, self.right_df)
-        # -- sort the order of each pair with respect to the ID.
-        self.candidate_pairs = pd.MultiIndex.from_tuples( list({*map(tuple, map(sorted, list(self.candidate_pairs)))}), names=[f"{self.left_id}", f"{self.right_id}"] )
+        # -- sort the order of each pair with respect to the ID. (THIS SORTING IS DANGEROUS)
+        self.candidate_pairs = pd.MultiIndex.from_tuples( list({*map(tuple, map(sorted, list(self.candidate_pairs)))}), names=[f"{self.right_id}", f"{self.left_id}"] )
         print(f"Number of pairs: {len(self.candidate_pairs)}")
         return self
     
     # TO DO: LINKAGE OVER CHUNKSIZES (FOR VERY LARGE DATASETS)
-    def perform_linkage(self, blocking_var, window=1, output_fname="feature_pairs", threshold=None, split_n=1):
+    def perform_linkage_vOLD(self, blocking_var, window=1, output_fname="feature_pairs", threshold=None, split_n=1):
         '''
             After setting the properties of the linkage, blocking is defined and the linkage is performed.
 
@@ -158,10 +158,11 @@ class PLinkage(MatchingBase):
             self._comparison_matrix = []
             for index, subset_candidate_pairs in enumerate(splitted_list):
                 # -- expected format: labeled multiindex.
-                subset_candidate_pairs = pd.MultiIndex.from_tuples( list({*map(tuple, map(sorted, list(subset_candidate_pairs)))}), names=[f"{self.left_id}_1", f"{self.left_id}_2"] )
+                subset_candidate_pairs = pd.MultiIndex.from_tuples( list({*map(tuple, map(sorted, list(subset_candidate_pairs)))}), names=[f"{self.right_id}", f"{self.left_id}"] )
                 if verbose:
                     print(f"Matching subset batch {index+1}/{len(splitted_list)} of size {subset_candidate_pairs.shape[0]} ...")
-                self._comparison_matrix.append( self.compare_cl.compute(subset_candidate_pairs, self.left_df, self.right_df) )
+                # THERE IS AN ORDERING ISSUE HERE
+                self._comparison_matrix.append( self.compare_cl.compute(subset_candidate_pairs, self.right_df, self.left_df) ) # WHY THIS ORDER???
             self._comparison_matrix = pd.concat(self._comparison_matrix)
             if verbose:
                 print('Done.')
@@ -173,6 +174,6 @@ class PLinkage(MatchingBase):
             self._comparison_matrix[self._comparison_matrix<threshold] = 0.0
 
         self.get_rank_names()
-        self._comparison_matrix = self.comparison_matrix.merge(self.name_ranks, left_on=[f"{self.left_id}_1"], right_index=True, how="left").fillna(7)
+        self._comparison_matrix = self.comparison_matrix.merge(self.name_ranks, left_on=[f"{self.left_id}"], right_index=True, how="left").fillna(7)
 
         return self

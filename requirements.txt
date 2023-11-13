@@ -2,3 +2,7 @@ pandas
 numpy
 sqlalchemy
 selenium
+ujson
+tqdm
+joblib
+scikit-learn

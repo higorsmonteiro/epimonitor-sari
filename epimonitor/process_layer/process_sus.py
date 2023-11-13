@@ -38,6 +38,14 @@ class ProcessSinan(ProcessBase):
 
 
 
+
+class ProcessSIM(ProcessBase):
+    db_type = "SIM"
+
+    def specific_standardize(self, field_id="ID_SIM"):
+        pass
+        
+
 class ProcessDB(ProcessBase):
     db_type = "ANY"
 
