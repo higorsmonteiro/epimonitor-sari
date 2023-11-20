@@ -93,7 +93,7 @@ class PLinkage(MatchingBase):
         indexer.add(SortedNeighbourhood(left_blocking_var, right_blocking_var, window=window))
         self.candidate_pairs = indexer.index(self.left_df, self.right_df)
         # -- sort the order of each pair with respect to the ID. (THIS SORTING IS DANGEROUS)
-        self.candidate_pairs = pd.MultiIndex.from_tuples( list({*map(tuple, map(sorted, list(self.candidate_pairs)))}), names=[f"{self.right_id}", f"{self.left_id}"] )
+        self.candidate_pairs = pd.MultiIndex.from_tuples(list(self.candidate_pairs), names=[f"{self.left_id}", f"{self.right_id}"] )
         print(f"Number of pairs: {len(self.candidate_pairs)}")
         return self
     
@@ -158,11 +158,12 @@ class PLinkage(MatchingBase):
             self._comparison_matrix = []
             for index, subset_candidate_pairs in enumerate(splitted_list):
                 # -- expected format: labeled multiindex.
-                subset_candidate_pairs = pd.MultiIndex.from_tuples( list({*map(tuple, map(sorted, list(subset_candidate_pairs)))}), names=[f"{self.right_id}", f"{self.left_id}"] )
+                #subset_candidate_pairs = pd.MultiIndex.from_tuples( list({*map(tuple, map(sorted, list(subset_candidate_pairs)))}), names=[f"{self.right_id}", f"{self.left_id}"] )
+                subset_candidate_pairs = pd.MultiIndex.from_tuples( list(subset_candidate_pairs), names=[f"{self.left_id}", f"{self.right_id}"] )
                 if verbose:
                     print(f"Matching subset batch {index+1}/{len(splitted_list)} of size {subset_candidate_pairs.shape[0]} ...")
                 # THERE IS AN ORDERING ISSUE HERE
-                self._comparison_matrix.append( self.compare_cl.compute(subset_candidate_pairs, self.right_df, self.left_df) ) # WHY THIS ORDER???
+                self._comparison_matrix.append( self.compare_cl.compute(subset_candidate_pairs, self.left_df, self.right_df) )
             self._comparison_matrix = pd.concat(self._comparison_matrix)
             if verbose:
                 print('Done.')
@@ -174,6 +175,6 @@ class PLinkage(MatchingBase):
             self._comparison_matrix[self._comparison_matrix<threshold] = 0.0
 
         self.get_rank_names()
-        self._comparison_matrix = self.comparison_matrix.merge(self.name_ranks, left_on=[f"{self.left_id}"], right_index=True, how="left").fillna(7)
+        self._comparison_matrix = self.comparison_matrix.merge(self.name_ranks, left_on=[f"{self.left_id}"], right_index=True, how="left").fillna(7) # 7 or 0??
 
         return self
